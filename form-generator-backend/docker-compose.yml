@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database Service
+  db:
+    image: postgres:15-alpine # Use a specific, lightweight PostgreSQL image
+    container_name: form_generator_db_container # A recognizable name for your DB container
+    restart: always # Ensures the container restarts if it crashes
+    ports:
+      - "5432:5432" # Maps host port 5432 to container port 5432. You can connect from host via 5432.
+    environment:
+      # These environment variables configure the PostgreSQL instance
+      # MAKE SURE THESE MATCH YOUR NESTJS CONFIG!
+      POSTGRES_DB: "form-generator.db"   # The name of the database to be created
+      POSTGRES_USER: "dev"              # The username for the database
+      POSTGRES_PASSWORD: "password"      # The password for the database user
+    volumes:
+      # Persist PostgreSQL data to a named volume to prevent data loss
+      # This volume ('pgdata') will live on your Docker host
+      - pgdata:/var/lib/postgresql/data
+
+  # NestJS Backend Service
+  backend:
+    build:
+      context: . # Build the image for this service from the current directory (where Dockerfile is)
+      dockerfile: Dockerfile # Specify the Dockerfile to use (optional, but good for clarity)
+    container_name: form_generator_backend_container # A recognizable name for your backend container
+    restart: always
+    ports:
+      - "3000:3000" # Maps host port 3000 to container port 3000. Your Angular app will connect to localhost:3000.
+    depends_on:
+      - db # Ensures the 'db' service starts and is healthy before 'backend' starts
+    environment:
+      # These environment variables are passed to your NestJS application
+      # Your NestJS app.module.ts will read these for database connection.
+      # IMPORTANT: Use 'db' as the DATABASE_HOST, as it's the service name in docker-compose.
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: dev
+      DATABASE_PASSWORD: password
+      DATABASE_NAME: form-generator.db
+      # You can add other environment variables here (e.g., NODE_ENV=production)
+    # Optional: Mount your local source code for live-reloading during development.
+    # This mounts your host machine's code into the container.
+    # It's helpful for dev, but for production, typically you'd only copy the built files.
+    volumes:
+      - .:/app # Mounts the current directory (your NestJS project) into /app in the container
+      # This ensures node_modules inside the container doesn't get overridden by a host node_modules
+      # which might have different OS/architecture binaries.
+      - /app/node_modules
+
+# Define named volumes for data persistence
+volumes:
+  pgdata:
