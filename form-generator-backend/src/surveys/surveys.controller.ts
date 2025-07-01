@@ -6,13 +6,18 @@ export class SurveysController {
   constructor(private readonly surveysService: SurveysService) {}
 
   @Post()
-  async create(@Body() body: { name: string; jsonData: any }) {
-    return this.surveysService.create(body.name, body.jsonData);
+  async create(@Body() body: { name: string; jsonData: any; slug: string }) {
+    return this.surveysService.create(body.name, body.slug, body.jsonData);
   }
 
   @Get(':name')
   async findOneByName(@Param('name') name: string) {
     return this.surveysService.findOneByName(name);
+  }
+
+  @Get(':slug')
+  async findOneBySlug(@Param('slug') slug: string) {
+    return this.surveysService.findOneBySlug(slug);
   }
 
   @Get()

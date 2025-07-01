@@ -11,7 +11,7 @@ import { Survey } from './surveys/survey.entity';
       type: 'postgres',
       host: 'localhost',
       port: 5432,
-      username: 'anej',
+      username: 'dev',
       password: 'password',
       database: 'form-generator.db',
       synchronize: true,

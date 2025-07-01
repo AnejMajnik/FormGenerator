@@ -8,6 +8,9 @@ export class Survey {
   @Column({ unique: true })
   name: string;
 
+  @Column({ unique: true })
+  slug: string;
+
   @Column({ type: 'jsonb' })
   jsonData: any;
 

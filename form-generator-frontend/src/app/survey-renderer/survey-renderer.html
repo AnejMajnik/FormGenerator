@@ -1,6 +1,14 @@
+<label for="surveyTitle">Survey Title:</label>
+<input type="text" id="surveyTitle" [(ngModel)]="surveyTitle" placeholder="Enter Survey Title">
+<br>
+<br>
+<label for="slug">Survey slug:</label>
+<input type="text" id="slug" [(ngModel)]="slug" placeholder="Enter Survey Slug">
+<br>
+<br>
 <textarea [(ngModel)]="jsonInput" rows="10" cols="60" placeholder="Paste Survey JSON here"></textarea>
 <br>
 <button (click)="renderSurvey()">Render Form</button>
-<button>Save Survey</button>
+<button (click)="saveSurvey()">Save Survey</button>
 <hr>
 <div id="surveyContainer"></div>

@@ -10,8 +10,8 @@ export class SurveysService {
     private surveysRepository: Repository<Survey>,
   ) {}
 
-  async create(name: string, jsonData: any): Promise<{ message: string; surveyId: number }> {
-    const survey = this.surveysRepository.create({ name, jsonData });
+  async create(name: string, slug: string, jsonData: any): Promise<{ message: string; surveyId: number }> {
+    const survey = this.surveysRepository.create({ name, slug, jsonData });
     await this.surveysRepository.save(survey);
     return { message: 'Survey created successfully', surveyId: survey.id };
   }
@@ -20,6 +20,14 @@ export class SurveysService {
     const survey = await this.surveysRepository.findOne({ where: { name } });
     if (!survey) {
       throw new NotFoundException(`Survey with name "${name}" not found`);
+    }
+    return survey.jsonData;
+  }
+
+  async findOneBySlug(slug: string): Promise<any> {
+    const survey = await this.surveysRepository.findOne({ where: { slug } });
+    if (!survey) {
+      throw new NotFoundException(`Survey with slug "${slug}" not found`);
     }
     return survey.jsonData;
   }
