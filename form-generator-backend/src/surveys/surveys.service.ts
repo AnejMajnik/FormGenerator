@@ -10,10 +10,9 @@ export class SurveysService {
     private surveysRepository: Repository<Survey>,
   ) {}
 
-  async create(name: string, slug: string, jsonData: any): Promise<{ message: string; surveyId: number }> {
+  async create(name: string, slug: string, jsonData: any): Promise<Survey> {
     const survey = this.surveysRepository.create({ name, slug, jsonData });
-    await this.surveysRepository.save(survey);
-    return { message: 'Survey created successfully', surveyId: survey.id };
+    return this.surveysRepository.save(survey);
   }
 
   async findOneByName(name: string): Promise<any> {

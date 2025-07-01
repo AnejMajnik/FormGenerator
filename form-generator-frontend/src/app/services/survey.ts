@@ -31,4 +31,14 @@ export class SurveyService {
     };
     return this.http.post<SurveyResponse>(this.apiUrl, survey, httpOptions);
   }
+
+  updateSurveyResult(id: number, results: any): Observable<SurveyResponse> {
+    const httpOptions = {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json'
+      })
+    };
+    // The PATCH endpoint expects the ID in the URL and the updated data in the body
+    return this.http.patch<SurveyResponse>(`${this.apiUrl}/${id}`, { results }, httpOptions);
+  }
 }

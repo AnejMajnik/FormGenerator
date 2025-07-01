@@ -4,11 +4,13 @@ import * as Survey from 'survey-angular';
 import { HttpErrorResponse } from '@angular/common/http';
 import 'survey-angular/defaultV2.css';
 import { SurveyService } from '../services/survey';
+import { SurveyResult } from '../services/survey-result';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-survey-renderer',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, CommonModule],
   templateUrl: './survey-renderer.html',
   styleUrl: './survey-renderer.css'
 })
@@ -17,21 +19,80 @@ export class SurveyRenderer {
   surveyTitle: string = '';
   slug: string = '';
 
-  constructor(private surveyService: SurveyService) {}
+  currentSurveyId: number | null = null;
+  currentSurveyResultId: number | null = null;
+
+  constructor(
+    private surveyService: SurveyService,
+    private surveyResultService: SurveyResult
+  ) {}
 
   renderSurvey() {
     try {
       const surveyJson = JSON.parse(this.jsonInput);
       const survey = new Survey.Model(surveyJson);
 
+      // At completion of the survey, save the results
       survey.onComplete.add((sender) => {
         console.log('Survey results:', sender.data);
-        // TODO: Send to backend
+        this.saveSurveyResults(sender.data);
+      });
+
+      survey.onCurrentPageChanged.add((sender, options) => {
+        if (sender.currentPageNo > 0 || Object.keys(sender.data).length > 0) {
+            console.log('Survey page changed, saving partial results:', sender.data);
+            this.saveSurveyResults(sender.data);
+        }
       });
 
       Survey.SurveyNG.render('surveyContainer', { model: survey });
     } catch (err) {
       alert('Invalid JSON');
+    }
+  }
+
+  saveSurveyResults(results: any) {
+    if (this.currentSurveyId === null) {
+      alert('Cannot save survey results: Survey ID is not set. Please load or save a survey first.');
+      return;
+    }
+
+    const resultData = {
+      surveyId: this.currentSurveyId, // Use the ID of the currently active survey
+      results: results // The data collected from the completed survey
+    };
+
+    if (this.currentSurveyResultId === null) {
+      // First time saving results for this session (POST)
+      this.surveyResultService.saveSurveyResult(resultData).subscribe({
+        next: (response) => {
+          console.log('Initial survey results saved successfully:', response);
+          this.currentSurveyResultId = response.id; // Store the ID of the new survey_results record
+        },
+        error: (error: HttpErrorResponse) => {
+          console.error('Error saving initial survey results:', error);
+          let errorMessage = 'Failed to save initial survey results. Please try again.';
+          if (error.error && error.error.message) {
+            errorMessage = error.error.message;
+          }
+          alert(errorMessage);
+        }
+      });
+    } else {
+      // Update existing results (PATCH)
+      this.surveyResultService.updateSurveyResult(this.currentSurveyResultId, results).subscribe({
+        next: (response) => {
+          console.log('Survey results updated successfully:', response);
+        },
+        error: (error: HttpErrorResponse) => {
+          console.error('Error updating survey results:', error);
+          let errorMessage = 'Failed to update survey results. Please try again.';
+          if (error.error && error.error.message) {
+            errorMessage = error.error.message;
+          }
+          alert(errorMessage);
+        }
+      });
     }
   }
 
@@ -62,13 +123,16 @@ export class SurveyRenderer {
         next: (response) => {
           console.log('Survey saved successfully!', response);
           alert('Survey saved successfully!');
+          if (response && response.id) {
+            this.currentSurveyId = response.id;
+          }
           this.jsonInput = '';
           this.surveyTitle = '';
           this.slug = '';
-          const container = document.getElementById('surveyContainer');
-          if (container) {
-            container.innerHTML = ''; // Clear rendered survey
-          }
+          //const container = document.getElementById('surveyContainer');
+          //if (container) {
+            //container.innerHTML = ''; // Clear rendered survey
+          //}
         },
         error: (error: HttpErrorResponse) => {
           console.error('Error saving survey:', error);
