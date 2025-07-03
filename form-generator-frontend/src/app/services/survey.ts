@@ -6,6 +6,7 @@ interface SurveyData {
   name: string;
   jsonData: any;
   slug: string;
+  customCss?: string;
 }
 
 interface SurveyResponse {
@@ -13,6 +14,7 @@ interface SurveyResponse {
   name: string;
   slug: string;
   jsonData: any;
+  customCss?: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, Renderer2 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import 'survey-angular/defaultV2.css';
@@ -15,21 +15,31 @@ import { Model } from 'survey-core';
   templateUrl: './survey-renderer.html',
   styleUrl: './survey-renderer.css'
 })
-export class SurveyRenderer {
+export class SurveyRenderer implements OnDestroy {
   jsonInput: string = '';
   surveyTitle: string = '';
   slug: string = '';
+  customCss: string = '';
+  enableCssPreview: boolean = false;
 
   currentSurveyId: number | null = null;
   currentSurveyResultId: number | null = null;
   surveyModel: Model = new Model({});
   isLoading = true;
   errorLoading = false;
+  surveyContainerClass = '';
+
+  private customStyleElement: HTMLStyleElement | null = null;
 
   constructor(
     private surveyService: SurveyService,
-    private surveyResultService: SurveyResult
+    private surveyResultService: SurveyResult,
+    private renderer: Renderer2
   ) {}
+
+  ngOnDestroy() {
+    this.removeCustomStyles();
+  }
 
   renderSurvey() {
     try {
@@ -50,8 +60,33 @@ export class SurveyRenderer {
       });
 
       this.surveyModel = survey;
+      
+      // Apply custom CSS if preview is enabled
+      if (this.enableCssPreview && this.customCss.trim()) {
+        this.applyCustomStyles();
+      } else {
+        this.removeCustomStyles();
+      }
     } catch (err) {
       alert('Invalid JSON');
+    }
+  }
+
+  private applyCustomStyles() {
+    this.removeCustomStyles();
+    
+    if (this.customCss.trim()) {
+      this.customStyleElement = this.renderer.createElement('style');
+      this.renderer.setProperty(this.customStyleElement, 'textContent', this.customCss);
+      this.renderer.setAttribute(this.customStyleElement, 'data-survey-custom-css', 'true');
+      this.renderer.appendChild(document.head, this.customStyleElement);
+    }
+  }
+
+  private removeCustomStyles() {
+    if (this.customStyleElement && this.customStyleElement.parentNode) {
+      this.renderer.removeChild(document.head, this.customStyleElement);
+      this.customStyleElement = null;
     }
   }
 
@@ -62,16 +97,15 @@ export class SurveyRenderer {
     }
 
     const resultData = {
-      surveyId: this.currentSurveyId, // Use the ID of the currently active survey
-      results: results // The data collected from the completed survey
+      surveyId: this.currentSurveyId,
+      results: results
     };
 
     if (this.currentSurveyResultId === null) {
-      // First time saving results for this session (POST)
       this.surveyResultService.saveSurveyResult(resultData).subscribe({
         next: (response) => {
           console.log('Initial survey results saved successfully:', response);
-          this.currentSurveyResultId = response.id; // Store the ID of the new survey_results record
+          this.currentSurveyResultId = response.id;
         },
         error: (error: HttpErrorResponse) => {
           console.error('Error saving initial survey results:', error);
@@ -83,7 +117,6 @@ export class SurveyRenderer {
         }
       });
     } else {
-      // Update existing results (PATCH)
       this.surveyResultService.updateSurveyResult(this.currentSurveyResultId, results).subscribe({
         next: (response) => {
           console.log('Survey results updated successfully:', response);
@@ -112,17 +145,15 @@ export class SurveyRenderer {
     }
 
     try {
-      // Attempt to parse JSON to ensure it's valid before sending
       const parsedJson = JSON.parse(this.jsonInput);
 
-      // Create the survey data object to send via the service
       const surveyData = {
         name: this.surveyTitle,
         slug: this.slug,
-        jsonData: parsedJson
+        jsonData: parsedJson,
+        customCss: this.customCss.trim() || undefined
       };
 
-      // Call the saveSurvey method from the SurveyService
       this.surveyService.saveSurvey(surveyData).subscribe({
         next: (response) => {
           console.log('Survey saved successfully!', response);
@@ -133,12 +164,14 @@ export class SurveyRenderer {
           this.jsonInput = '';
           this.surveyTitle = '';
           this.slug = '';
+          this.customCss = '';
+          this.enableCssPreview = false;
+          this.removeCustomStyles();
         },
         error: (error: HttpErrorResponse) => {
           console.error('Error saving survey:', error);
           let errorMessage = 'Failed to save survey. Please try again.';
-          // Check for specific error messages from the backend if available
-          if (error.status === 409) { // Conflict status, likely due to unique constraint
+          if (error.status === 409) {
             errorMessage = 'A survey with this title or slug already exists.';
           } else if (error.error && error.error.message) {
             errorMessage = error.error.message;
@@ -150,6 +183,14 @@ export class SurveyRenderer {
       console.error('Invalid JSON for saving:', err);
       alert('Invalid JSON format. Cannot save survey.');
     }
+  }
 
+  // Toggle CSS preview
+  onCssPreviewToggle() {
+    if (this.enableCssPreview && this.customCss.trim()) {
+      this.applyCustomStyles();
+    } else {
+      this.removeCustomStyles();
+    }
   }
 }

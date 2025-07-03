@@ -10,8 +10,8 @@ export class SurveysService {
     private surveysRepository: Repository<Survey>,
   ) {}
 
-  async create(name: string, slug: string, jsonData: any): Promise<Survey> {
-    const survey = this.surveysRepository.create({ name, slug, jsonData });
+  async create(name: string, slug: string, jsonData: any, customCss?: string): Promise<Survey> {
+    const survey = this.surveysRepository.create({ name, slug, jsonData, customCss });
     return this.surveysRepository.save(survey);
   }
 
@@ -34,6 +34,4 @@ export class SurveysService {
   async findAll(): Promise<Survey[]> {
     return this.surveysRepository.find();
   }
-
-  
 }
