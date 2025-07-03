@@ -1,0 +1,7 @@
+<div class="survey-container">
+  <p *ngIf="isLoading">Loading survey, please wait...</p>
+
+  <p *ngIf="errorLoading">Sorry, the survey could not be loaded.</p>
+
+  <survey [model]="surveyModel"></survey>
+</div>

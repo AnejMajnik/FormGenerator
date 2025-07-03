@@ -10,12 +10,12 @@ export class SurveysController {
     return this.surveysService.create(body.name, body.slug, body.jsonData);
   }
 
-  @Get(':name')
+  @Get('by-name/:name')
   async findOneByName(@Param('name') name: string) {
     return this.surveysService.findOneByName(name);
   }
 
-  @Get(':slug')
+  @Get('slug/:slug')
   async findOneBySlug(@Param('slug') slug: string) {
     return this.surveysService.findOneBySlug(slug);
   }

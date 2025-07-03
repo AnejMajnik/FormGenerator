@@ -59,7 +59,8 @@
               "buildTarget": "form-generator-frontend:build:production"
             },
             "development": {
-              "buildTarget": "form-generator-frontend:build:development"
+              "buildTarget": "form-generator-frontend:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"

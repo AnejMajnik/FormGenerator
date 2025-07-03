@@ -23,7 +23,8 @@
 
   <hr class="my-4">
 
-  <div id="surveyContainer" class="p-3 border rounded bg-light">
-    <p class="text-muted text-center" *ngIf="!jsonInput.trim()">Paste JSON and click "Render Form" to see your survey.</p>
+  <div class="mt-4">
+    <h2 class="text-center">Rendered Survey</h2>
+    <survey [model]="surveyModel"></survey>
   </div>
 </div>

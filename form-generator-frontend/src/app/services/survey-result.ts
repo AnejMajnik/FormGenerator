@@ -18,7 +18,7 @@ interface SavedSurveyResult {
   providedIn: 'root'
 })
 export class SurveyResult {
-  private apiUrl = 'http://localhost:3000/survey-results';
+  private apiUrl = 'http://localhost:3000/api/survey-results';
 
   constructor(private http: HttpClient) { }
 

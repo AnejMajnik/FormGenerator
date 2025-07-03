@@ -23,15 +23,17 @@ export class SurveysService {
     return survey.jsonData;
   }
 
-  async findOneBySlug(slug: string): Promise<any> {
+  async findOneBySlug(slug: string): Promise<Survey> {
     const survey = await this.surveysRepository.findOne({ where: { slug } });
     if (!survey) {
       throw new NotFoundException(`Survey with slug "${slug}" not found`);
     }
-    return survey.jsonData;
+    return survey;
   }
 
   async findAll(): Promise<Survey[]> {
     return this.surveysRepository.find();
   }
+
+  
 }

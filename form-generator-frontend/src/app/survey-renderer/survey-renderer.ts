@@ -1,16 +1,17 @@
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import * as Survey from 'survey-angular';
 import { HttpErrorResponse } from '@angular/common/http';
 import 'survey-angular/defaultV2.css';
 import { SurveyService } from '../services/survey';
 import { SurveyResult } from '../services/survey-result';
 import { CommonModule } from '@angular/common';
+import { SurveyModule } from 'survey-angular-ui';
+import { Model } from 'survey-core';
 
 @Component({
   selector: 'app-survey-renderer',
   standalone: true,
-  imports: [FormsModule, CommonModule],
+  imports: [FormsModule, CommonModule, SurveyModule],
   templateUrl: './survey-renderer.html',
   styleUrl: './survey-renderer.css'
 })
@@ -21,6 +22,9 @@ export class SurveyRenderer {
 
   currentSurveyId: number | null = null;
   currentSurveyResultId: number | null = null;
+  surveyModel: Model = new Model({});
+  isLoading = true;
+  errorLoading = false;
 
   constructor(
     private surveyService: SurveyService,
@@ -30,7 +34,7 @@ export class SurveyRenderer {
   renderSurvey() {
     try {
       const surveyJson = JSON.parse(this.jsonInput);
-      const survey = new Survey.Model(surveyJson);
+      const survey = new Model(surveyJson);
 
       // At completion of the survey, save the results
       survey.onComplete.add((sender) => {
@@ -45,7 +49,7 @@ export class SurveyRenderer {
         }
       });
 
-      Survey.SurveyNG.render('surveyContainer', { model: survey });
+      this.surveyModel = survey;
     } catch (err) {
       alert('Invalid JSON');
     }
@@ -129,10 +133,6 @@ export class SurveyRenderer {
           this.jsonInput = '';
           this.surveyTitle = '';
           this.slug = '';
-          //const container = document.getElementById('surveyContainer');
-          //if (container) {
-            //container.innerHTML = ''; // Clear rendered survey
-          //}
         },
         error: (error: HttpErrorResponse) => {
           console.error('Error saving survey:', error);
