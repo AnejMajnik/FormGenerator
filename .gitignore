@@ -1,26 +1,11 @@
-# Gitignore for the entire monorepo
-
 # Frontend (Angular) Specific Ignores
 /form-generator-frontend/node_modules/
 /form-generator-frontend/dist/
 /form-generator-frontend/.angular/
 /form-generator-frontend/coverage/
-/form-generator-frontend/.browserslistrc
 /form-generator-frontend/.eslintcache
 /form-generator-frontend/.fusebox/
-/form-generator-frontend/e2e/
-/form-generator-frontend/karma.conf.js
-/form-generator-frontend/src/environments/environment.ts
-/form-generator-frontend/src/environments/environment.prod.ts
-/form-generator-frontend/src/main.ts
-/form-generator-frontend/src/polyfills.ts
-/form-generator-frontend/src/test.ts
-/form-generator-frontend/tsconfig.app.json
-/form-generator-frontend/tsconfig.spec.json
-/form-generator-frontend/tsconfig.json
-/form-generator-frontend/tslint.json
 /form-generator-frontend/.sass-cache/
-/form-generator-frontend/.vscode/
 
 # Backend (NestJS) Specific Ignores
 /form-generator-backend/node_modules/
@@ -28,11 +13,6 @@
 /form-generator-backend/coverage/
 /form-generator-backend/.eslintcache
 /form-generator-backend/logs/
-/form-generator-backend/nest-cli.json
-/form-generator-backend/tsconfig.build.json
-/form-generator-backend/tsconfig.json
-/form-generator-backend/.prettierrc
-form-generator-frontend/.vscode
 
 # Common Ignores (apply to any level if not specific to a sub-project)
 .env
