@@ -7,6 +7,7 @@ import { ActivatedRoute } from '@angular/router';
 import 'survey-angular/defaultV2.css';
 import { SurveyModule } from 'survey-angular-ui';
 import { SurveyResult } from '../services/survey-result';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-survey-viewer',
@@ -28,10 +29,14 @@ export class SurveyViewer implements OnInit, OnDestroy {
   // For result saving
   currentSurveyId: number | null = null;
   currentSurveyResultId: number | null = null;
+  sessionId: string = '';
+  userId: string | null = null;
   
   private customStyleElement: HTMLStyleElement | null = null;
 
   ngOnInit() {
+    this.sessionId = this.generateSessionId();
+
     this.route.paramMap.subscribe(params => {
       const slug = params.get('slug');
       if (slug) {
@@ -48,6 +53,34 @@ export class SurveyViewer implements OnInit, OnDestroy {
     this.removeCustomStyles();
   }
 
+  private generateSessionId(): string {
+    // Generate UUID
+    if (crypto && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    
+    // Fallback for older browsers
+    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  private getOrCreateSessionId(): string {
+    if (!this.currentSurveyId) {
+      // Fallback if surveyId not available yet
+      return this.generateSessionId();
+    }
+  
+    const storageKey = `survey-session-${this.currentSurveyId}`;
+    let sessionId = localStorage.getItem(storageKey);
+    
+    if (!sessionId) {
+      // Generate new session ID
+      sessionId = this.generateSessionId();
+      localStorage.setItem(storageKey, sessionId);
+    }
+    
+    return sessionId;
+  }
+
   loadSurvey(slug: string) {
     this.http.get<any>(`/api/surveys/slug/${slug}`).subscribe({
       next: (surveyData) => {
@@ -58,37 +91,93 @@ export class SurveyViewer implements OnInit, OnDestroy {
           return;
         }
 
-        // Store the survey ID for saving results
         this.currentSurveyId = surveyData.id;
+        this.sessionId = this.getOrCreateSessionId();
 
         const survey = new Model(surveyData.jsonData);
 
-        // Save results on survey completion
-        survey.onComplete.add((sender) => {
-          console.log('Survey completed with results:', sender.data);
-          this.saveSurveyResults(sender.data);
-        });
+        this.restoreSurveyData(survey).then(() => {
+          // Save results on value change
+          survey.onValueChanged.add((sender, options) => {
+            this.saveSurveyData(sender);
+          });
 
-        // Save partial results on each page change
-        survey.onCurrentPageChanged.add((sender, options) => {
-          if (sender.currentPageNo > 0 || Object.keys(sender.data).length > 0) {
-            console.log('Survey page changed, saving partial results:', sender.data);
-            this.saveSurveyResults(sender.data);
+          // Save results on page change
+          survey.onCurrentPageChanged.add((sender, options) => {
+            this.saveSurveyData(sender);
+          });
+
+          // Save results on survey completion
+          survey.onComplete.add((sender) => {
+            this.completeSurvey(sender);
+          });
+          
+          this.surveyModel = survey;
+          this.isLoading = false;
+
+          // Apply custom CSS if it exists
+          if (surveyData.customCss) {
+            this.applyCustomStyles(surveyData.customCss);
           }
         });
-
-        this.surveyModel = survey;
-        this.isLoading = false;
-
-        // Apply custom CSS if it exists
-        if (surveyData.customCss) {
-          this.applyCustomStyles(surveyData.customCss);
-        }
       },
       error: (err) => {
         console.error('Failed to load survey', err);
         this.isLoading = false;
         this.errorLoading = true;
+      }
+    });
+  }
+
+  private async restoreSurveyData(survey: Model): Promise<void> {  
+    if (!this.currentSurveyId) return;
+
+    try {
+      // Try to get incomplete results for this session/user
+      const params = this.userId ? 
+        `?userId=${this.userId}` : 
+        `?sessionId=${this.sessionId}`;
+      
+      
+      const response = await firstValueFrom(
+        this.http.get<any>(`/api/survey-results/incomplete/${this.currentSurveyId}${params}`)
+      );
+
+      if (response && response.results) {
+        survey.data = response.results;
+        
+        // Restore the current page
+        if (response.currentPageNo !== undefined && response.currentPageNo > 0) {
+          survey.currentPageNo = response.currentPageNo;
+        }
+        
+        // Store the existing result ID for future updates
+        this.currentSurveyResultId = response.id;  
+      } else {
+        // No previous data found, reset the result ID
+        this.currentSurveyResultId = null;
+      }
+    } catch (error) {
+      // Reset the result ID since no previous data exists
+      this.currentSurveyResultId = null;
+    }
+  }
+
+  private completeSurvey(survey: Model): void {
+    if (!this.currentSurveyResultId) {
+      console.error('Cannot complete survey: No result ID found.');
+      return;
+    }
+
+    // Mark survey as completed
+    this.http.patch(`/api/survey-results/${this.currentSurveyResultId}/complete`, {
+      results: survey.data
+    }).subscribe({
+      next: (response) => {
+        console.log('Survey completed successfully:', response);
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('Error completing survey:', error);
       }
     });
   }
@@ -111,38 +200,47 @@ export class SurveyViewer implements OnInit, OnDestroy {
     }
   }
 
-  saveSurveyResults(results: any) {
-    if (this.currentSurveyId === null) {
-      console.error('Cannot save survey results: Survey ID is not set.');
+  private saveSurveyData(survey: Model): void {
+    if (!this.currentSurveyId) {
       return;
     }
 
     const resultData = {
       surveyId: this.currentSurveyId,
-      results: results
+      results: survey.data,
+      sessionId: this.sessionId,
+      userId: this.userId || undefined,
+      currentPageNo: survey.currentPageNo
     };
 
-    if (this.currentSurveyResultId === null) {
+    if (this.currentSurveyResultId === null || this.currentSurveyResultId === undefined) {
       // First time saving results for this session (POST)
       this.surveyResultService.saveSurveyResult(resultData).subscribe({
         next: (response) => {
-          console.log('Survey results saved successfully:', response);
           this.currentSurveyResultId = response.id;
         },
         error: (error: HttpErrorResponse) => {
-          console.error('Error saving survey results:', error);
-          // Don't show alert to user in viewer, just log the error
+          console.error('❌ Error saving survey data:', error);
         }
       });
     } else {
       // Update existing results (PATCH)
-      this.surveyResultService.updateSurveyResult(this.currentSurveyResultId, results).subscribe({
+      this.surveyResultService.updateSurveyResult(
+        this.currentSurveyResultId, 
+        survey.data,
+        survey.currentPageNo,
+        false  // isCompleted = false for partial saves
+      ).subscribe({
         next: (response) => {
-          console.log('Survey results updated successfully:', response);
+          console.log('Survey data updated (existing):', response);
         },
         error: (error: HttpErrorResponse) => {
-          console.error('Error updating survey results:', error);
-          // Don't show alert to user in viewer, just log the error
+          console.error('Error updating survey data:', error);
+          console.error('Will try creating new record instead...');
+          
+          // Fallback: if update fails, create new record
+          this.currentSurveyResultId = null;
+          this.saveSurveyData(survey);
         }
       });
     }
