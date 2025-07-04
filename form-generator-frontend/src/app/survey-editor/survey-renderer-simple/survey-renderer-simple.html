@@ -1,0 +1,69 @@
+<div class="card">
+  <div class="card-header">
+    <h3>Survey Definition Editor</h3>
+    <small class="text-muted">Edit the JSON definition and click Apply to update the preview below</small>
+  </div>
+  <div class="card-body">
+    <div class="mb-3">
+      <label for="jsonInput" class="form-label">Survey JSON:</label>
+      <textarea 
+        id="jsonInput" 
+        [(ngModel)]="surveyDefinition" 
+        (ngModelChange)="onSurveyDefinitionChange($event)"
+        rows="10" 
+        class="form-control rounded font-monospace" 
+        placeholder="Paste Survey JSON here">
+      </textarea>
+    </div>
+
+    <!-- CSS Editor Section (optional) -->
+    <div class="mb-3">
+      <label for="customCss" class="form-label">Custom CSS:</label>
+      <textarea 
+        id="customCss" 
+        [(ngModel)]="customCss" 
+        rows="4" 
+        class="form-control rounded font-monospace" 
+        placeholder="Enter custom CSS here (optional)">
+      </textarea>
+    </div>
+
+    <!-- CSS Preview Toggle -->
+    <div class="mb-3">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="enableCssPreview" [(ngModel)]="enableCssPreview" (change)="onCssPreviewToggle()">
+        <label class="form-check-label" for="enableCssPreview">
+          Enable CSS Preview
+        </label>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button 
+        (click)="onApplyClick()" 
+        class="btn btn-primary"
+        [disabled]="!isValidJson()">
+        Apply Survey Definition
+      </button>
+      <button 
+        (click)="formatJson()" 
+        class="btn btn-secondary">
+        Format JSON
+      </button>
+      <button 
+        (click)="loadSampleSurvey()" 
+        class="btn btn-outline-secondary">
+        Load Sample
+      </button>
+    </div>
+
+    <div class="mt-2">
+      <small class="text-muted" *ngIf="isValidJson(); else invalidJson">
+        ✓ Valid JSON format
+      </small>
+      <ng-template #invalidJson>
+        <small class="text-danger">⚠ Invalid JSON format</small>
+      </ng-template>
+    </div>
+  </div>
+</div>

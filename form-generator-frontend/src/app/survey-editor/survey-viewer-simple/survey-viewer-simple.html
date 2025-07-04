@@ -1,0 +1,19 @@
+<div class="card">
+  <div class="card-header">
+    <h3>Survey Preview</h3>
+    <small class="text-muted">This preview updates when you apply changes from above</small>
+  </div>
+  <div class="card-body">
+    <div *ngIf="!surveyJson" class="text-center text-muted py-5">
+      <p>Click "Apply Survey Definition" above to see the preview</p>
+    </div>
+    
+    <div *ngIf="surveyJson && errorMessage" class="alert alert-danger">
+      {{ errorMessage }}
+    </div>
+    
+    <div *ngIf="surveyJson && !errorMessage">
+      <survey [model]="surveyModel"></survey>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,26 @@
+<div class="container my-4">
+  <h1 class="text-center mb-4">Survey Editor - Component Communication Demo</h1>
+  
+  <!-- Status Display -->
+  <div class="alert alert-info mb-4">
+    <h5>Communication Status:</h5>
+    <p><strong>Current Page:</strong> {{ currentPage }}</p>
+    <p><strong>Survey Status:</strong> {{ surveyStatus }}</p>
+  </div>
+
+  <!-- Top Component - Survey Definition Editor (simplified survey-renderer) -->
+  <app-survey-renderer-simple
+    [surveyDefinition]="surveyDefinition"
+    (surveyDefinitionChange)="surveyDefinition = $event"
+    (applyClicked)="onApplyClicked($event)">
+  </app-survey-renderer-simple>
+
+  <hr class="my-4">
+
+  <!-- Bottom Component - Survey Preview (modified survey-viewer) -->
+  <app-survey-viewer-simple
+    [surveyJson]="activeSurveyJson"
+    (pageChanged)="onPageChanged($event)"
+    (surveyCompleted)="onSurveyCompleted($event)">
+  </app-survey-viewer-simple>
+</div>
