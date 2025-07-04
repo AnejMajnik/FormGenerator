@@ -175,6 +175,14 @@ export class SurveyViewer implements OnInit, OnDestroy {
     }).subscribe({
       next: (response) => {
         console.log('Survey completed successfully:', response);
+
+        if (window.parent !== window) {
+          window.parent.postMessage({
+            type: 'surveyComplete',
+            data: survey.data,
+            surveyId: this.currentSurveyId
+          }, '*');
+        }
       },
       error: (error: HttpErrorResponse) => {
         console.error('Error completing survey:', error);
